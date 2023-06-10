@@ -10,20 +10,44 @@ const createToken = (_id) => {
 const signupUser = async (req, res) => {
   const { name, username, email, password } = req.body;
   const ipAddress =
-    req.headers["x-forward-for"] || req.connection.remoteDddress;
+    req.headers["x-forward-for"] || req.connection.remoteAddress;
 
   try {
+    // create user
     const user = await User.signup(name, username, email, password, ipAddress);
-    // create a token for a user
+    // create token as a cookie
     const token = createToken(user._id);
+    res.cookie("token", token, {
+      maxAge: 86400 * 1000,
+      httpOnly: true,
+      secure: true,
+    });
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
+// login user
+
+const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+  const ipAddress =
+    req.headers["x-forward-for"] || req.connection.remoteAddress;
+
+  try {
+    const user = await User.login(email, password, ipAddress);
+
+    // create token
+    const token = createToken(user._id);
+    // clear prev token
+    res.clearCookie("token");
     // set the token as a cookie
     res.cookie("token", token, {
       maxAge: 86400 * 1000,
       httpOnly: true,
       secure: true,
     });
-
     res.status(200).json(user);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -32,4 +56,5 @@ const signupUser = async (req, res) => {
 
 module.exports = {
   signupUser,
+  loginUser
 };
