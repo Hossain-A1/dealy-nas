@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/user");
+const mongoose = require("mongoose");
 
 // create token
 const createToken = (_id) => {
@@ -54,7 +55,104 @@ const loginUser = async (req, res) => {
   }
 };
 
+// get all user
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({});
+    if (!users) {
+      throw Error("Users not found.");
+    }
+
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// get an user
+const getUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw Error("Invalid userId.");
+    }
+
+    if (userId !== req.user?._id.toString()) {
+      throw Error("Unauthorized access.");
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      throw Error("User not found.");
+    }
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// delete an user
+const deleteUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw Error("Invalid userId.");
+    }
+
+    if (userId !== req.user?._id.toString()) {
+      throw Error("Unauthorized access.");
+    }
+
+    const user = await User.findOneAndDelete(userId);
+    if (!user) {
+      throw Error("User not found.");
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
+// update an user
+const updateUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      throw Error("Invalid userId.");
+    }
+    if (userId !== req.user?._id.toString()) {
+      throw Error("Unauthorized access.");
+    }
+
+    if (!name) {
+      throw Erroe("Name feild is required.");
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: { name } },
+      { new: true }
+    );
+    if (!user) {
+      throw Error("User not found.");
+    }
+
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
 module.exports = {
   signupUser,
-  loginUser
+  loginUser,
+  getUsers,
+  getUser,
+  deleteUser,
+  updateUser,
 };
